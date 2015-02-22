@@ -27,8 +27,6 @@
 
 #include "stdio.h"
 
-#include "emiter/emiter.h"
-
 static void init_ssp(void) {
 	SSP_CFG_Type SSP_ConfigStruct;
 	PINSEL_CFG_Type PinCfg;
@@ -64,7 +62,6 @@ static void init_ssp(void) {
 	SSP_Cmd(LPC_SSP1, ENABLE);
 
 }
-
 static void init_i2c(void) {
 	PINSEL_CFG_Type PinCfg;
 
@@ -82,7 +79,6 @@ static void init_i2c(void) {
 	/* Enable I2C1 operation */
 	I2C_Cmd(LPC_I2C2, ENABLE);
 }
-
 static void init_adc(void) {
 	PINSEL_CFG_Type PinCfg;
 
@@ -107,12 +103,40 @@ static void init_adc(void) {
 
 }
 
-void emiter_init(void) {
+void sensor_init(void) {
 	light_enable();
 	light_setRange(LIGHT_RANGE_64000);
 }
+void timer1_init(void) {
+	TIM_TIMERCFG_Type TIM_ConfigStruct;
+	TIM_MATCHCFG_Type TIM_MatchConfigStruct ;
+
+	// Initialize timer 0, prescale count time of 1ms
+	TIM_ConfigStruct.PrescaleOption = TIM_PRESCALE_USVAL;
+	TIM_ConfigStruct.PrescaleValue	= 1000;
+	// use channel 0, MR0
+	TIM_MatchConfigStruct.MatchChannel = 0;
+	// Enable interrupt when MR0 matches the value in TC register
+	TIM_MatchConfigStruct.IntOnMatch = TRUE;
+	//Enable reset on MR0: TIMER will not reset if MR0 matches it
+	TIM_MatchConfigStruct.ResetOnMatch = TRUE;
+	//Stop on MR0 if MR0 matches it
+	TIM_MatchConfigStruct.StopOnMatch = TRUE;
+	//do no thing for external output
+	TIM_MatchConfigStruct.ExtMatchOutputType = TIM_EXTMATCH_NOTHING;
+	// Set Match value, count value is time (timer * 1000uS =timer mS )
+	TIM_MatchConfigStruct.MatchValue = 5000;
+
+	// Set configuration for Tim_config and Tim_MatchConfig
+	TIM_Init(LPC_TIM1, TIM_TIMER_MODE, &TIM_ConfigStruct);
+	TIM_ConfigMatch(LPC_TIM1, &TIM_MatchConfigStruct);
+	// To start timer 0
+	TIM_Cmd(LPC_TIM1, ENABLE);
+
+	NVIC_EnableIRQ(TIMER1_IRQn);
+}
+
 int waitTime = 250;
-// Deprecated
 void emiter_testFrequency(void) {
 	// on
 	GPIO_SetValue(2, 64);
@@ -128,44 +152,43 @@ void emiter_testFrequency(void) {
 }
 void rit_init(void) {
 	RIT_Init(LPC_RIT);
-	RIT_TimerConfig(LPC_RIT, 1000);
+	RIT_TimerConfig(LPC_RIT, 2000);
 	RIT_Cmd(LPC_RIT, ENABLE);
-	NVIC_EnableIRQ(RIT_IRQn);
 }
-
-uint8_t light_toggle = 0;
-void RIT_IRQHandler(void) {
-	printf("RIT_IRQHandler\n");
-	if(light_toggle) {
-		GPIO_SetValue(2, 64);
-	} else {
-		GPIO_ClearValue(2, 64);
-	}
-	light_toggle = !light_toggle;
-}
-
 
 int main(void) {
 	init_i2c();
 	init_ssp();
 	init_adc();
 
-	rotary_init();
-	led7seg_init();
-
-	pca9532_init();
-	joystick_init();
-	acc_init();
-	oled_init();
 	rgb_init();
 	light_init();
 
-	emiter_init();
-	rit_init();
+	sensor_init();
+//	rit_init();
+	timer1_init();
 
 	GPIO_SetDir(2, 0xFFFFFFFF, 1);
 	while (1) {
 //		emiter_testFrequency();
 	}
+}
+
+uint8_t light_toggle = 0;
+void RIT_IRQHandler(void) {
+	printf("RIT_IRQHandler\n");
+	if(light_toggle) {
+		rgb_setLeds(RGB_RED);
+	} else {
+		rgb_setLeds(0);
+	}
+	light_toggle = !light_toggle;
+}
+
+void TIMER1_IRQHandler(void) {
+	TIM_ClearIntPending(LPC_TIM1, 0);
+	TIM_ClearIntCapturePending(LPC_TIM1, 0);
+	printf("TIMER1_IRQHandler\n");
+	TIM_Cmd(LPC_TIM1, ENABLE);
 }
 
