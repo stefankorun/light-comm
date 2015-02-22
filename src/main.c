@@ -27,6 +27,8 @@
 
 #include "stdio.h"
 
+#include "app/output.h"
+
 static void init_ssp(void) {
 	SSP_CFG_Type SSP_ConfigStruct;
 	PINSEL_CFG_Type PinCfg;
@@ -107,34 +109,6 @@ void sensor_init(void) {
 	light_enable();
 	light_setRange(LIGHT_RANGE_64000);
 }
-void timer1_init(void) {
-	TIM_TIMERCFG_Type TIM_ConfigStruct;
-	TIM_MATCHCFG_Type TIM_MatchConfigStruct ;
-
-	// Initialize timer 0, prescale count time of 1ms
-	TIM_ConfigStruct.PrescaleOption = TIM_PRESCALE_USVAL;
-	TIM_ConfigStruct.PrescaleValue	= 1000;
-	// use channel 0, MR0
-	TIM_MatchConfigStruct.MatchChannel = 0;
-	// Enable interrupt when MR0 matches the value in TC register
-	TIM_MatchConfigStruct.IntOnMatch = TRUE;
-	//Enable reset on MR0: TIMER will not reset if MR0 matches it
-	TIM_MatchConfigStruct.ResetOnMatch = TRUE;
-	//Stop on MR0 if MR0 matches it
-	TIM_MatchConfigStruct.StopOnMatch = TRUE;
-	//do no thing for external output
-	TIM_MatchConfigStruct.ExtMatchOutputType = TIM_EXTMATCH_NOTHING;
-	// Set Match value, count value is time (timer * 1000uS =timer mS )
-	TIM_MatchConfigStruct.MatchValue = 5000;
-
-	// Set configuration for Tim_config and Tim_MatchConfig
-	TIM_Init(LPC_TIM1, TIM_TIMER_MODE, &TIM_ConfigStruct);
-	TIM_ConfigMatch(LPC_TIM1, &TIM_MatchConfigStruct);
-	// To start timer 0
-	TIM_Cmd(LPC_TIM1, ENABLE);
-
-	NVIC_EnableIRQ(TIMER1_IRQn);
-}
 
 int waitTime = 250;
 void emiter_testFrequency(void) {
@@ -166,7 +140,7 @@ int main(void) {
 
 	sensor_init();
 //	rit_init();
-	timer1_init();
+	output_init();
 
 	GPIO_SetDir(2, 0xFFFFFFFF, 1);
 	while (1) {
@@ -185,10 +159,4 @@ void RIT_IRQHandler(void) {
 	light_toggle = !light_toggle;
 }
 
-void TIMER1_IRQHandler(void) {
-	TIM_ClearIntPending(LPC_TIM1, 0);
-	TIM_ClearIntCapturePending(LPC_TIM1, 0);
-	printf("TIMER1_IRQHandler\n");
-	TIM_Cmd(LPC_TIM1, ENABLE);
-}
 
