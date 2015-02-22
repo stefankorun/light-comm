@@ -7,9 +7,9 @@
 
 #include "output.h"
 
-#include "lpc17xx_timer.h"
 
-
+// Private
+uint16_t signalLength = 300;
 
 TIM_MATCHCFG_Type TIM_MatchConfigStruct;
 void timer1_init(void) {
@@ -29,26 +29,43 @@ void timer1_init(void) {
 	//do no thing for external output
 	TIM_MatchConfigStruct.ExtMatchOutputType = TIM_EXTMATCH_NOTHING;
 	// Set Match value, count value is time (timer * 1000uS =timer mS )
-	TIM_MatchConfigStruct.MatchValue = 5000;
+	TIM_MatchConfigStruct.MatchValue = signalLength;
 
 	// Set configuration for Tim_config and Tim_MatchConfig
 	TIM_Init(LPC_TIM1, TIM_TIMER_MODE, &TIM_ConfigStruct);
 	TIM_ConfigMatch(LPC_TIM1, &TIM_MatchConfigStruct);
 	// To start timer 0
-	TIM_Cmd(LPC_TIM1, ENABLE);
+//	TIM_Cmd(LPC_TIM1, ENABLE);
 
 	NVIC_EnableIRQ(TIMER1_IRQn);
 }
 
-void output_init(void) {
-	timer1_init();
-}
 
 // IRQ Handlers
+uint8_t light_toggle = 0;
 void TIMER1_IRQHandler(void) {
 	TIM_ClearIntPending(LPC_TIM1, 0);
-	TIM_ClearIntCapturePending(LPC_TIM1, 0);
-	printf("TIMER1_IRQHandler\n");
+	if(light_toggle) {
+		rgb_setLeds(5);
+	} else {
+		rgb_setLeds(0);
+	}
+	light_toggle = !light_toggle;
 	TIM_Cmd(LPC_TIM1, ENABLE);
 }
 
+// Public functions
+void output_init(void) {
+	timer1_init();
+	rgb_init();
+}
+void output_send_signal(signal_length length) {
+	rgb_setLeds(5);
+	if (length == SIGNAL_SHORT) {
+		Timer0_Wait(signalLength);
+	} else if (length == SIGNAL_LONG) {
+		Timer0_Wait(signalLength * 2);
+	}
+	rgb_setLeds(0);
+	Timer0_Wait(signalLength);
+}

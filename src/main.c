@@ -16,14 +16,7 @@
 // moj
 #include "lpc17xx_rit.h"
 
-#include "joystick.h"
-#include "pca9532.h"
-#include "led7seg.h"
-#include "rotary.h"
 #include "light.h"
-#include "oled.h"
-#include "acc.h"
-#include "rgb.h"
 
 #include "stdio.h"
 
@@ -135,28 +128,13 @@ int main(void) {
 	init_ssp();
 	init_adc();
 
-	rgb_init();
-	light_init();
-
 	sensor_init();
 //	rit_init();
 	output_init();
 
 	GPIO_SetDir(2, 0xFFFFFFFF, 1);
+
 	while (1) {
-//		emiter_testFrequency();
 	}
 }
-
-uint8_t light_toggle = 0;
-void RIT_IRQHandler(void) {
-	printf("RIT_IRQHandler\n");
-	if(light_toggle) {
-		rgb_setLeds(RGB_RED);
-	} else {
-		rgb_setLeds(0);
-	}
-	light_toggle = !light_toggle;
-}
-
 
