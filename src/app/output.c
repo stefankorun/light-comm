@@ -7,7 +7,6 @@
 
 #include "output.h"
 
-
 // Private
 uint16_t signalLength = 300;
 
@@ -40,12 +39,11 @@ void timer1_init(void) {
 	NVIC_EnableIRQ(TIMER1_IRQn);
 }
 
-
 // IRQ Handlers
 uint8_t light_toggle = 0;
 void TIMER1_IRQHandler(void) {
 	TIM_ClearIntPending(LPC_TIM1, 0);
-	if(light_toggle) {
+	if (light_toggle) {
 		rgb_setLeds(5);
 	} else {
 		rgb_setLeds(0);

@@ -11,11 +11,13 @@
 #include "lpc17xx_timer.h"
 #include "rgb.h"
 
-typedef enum
-{
-    SIGNAL_SHORT,
-    SIGNAL_LONG
+typedef enum {
+	SIGNAL_SHORT, SIGNAL_LONG
 } signal_length;
+
+typedef struct {
+
+} SignalStatus;
 
 void output_init(void);
 void output_send_signal(signal_length);
