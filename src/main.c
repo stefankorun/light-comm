@@ -13,13 +13,10 @@
 #include "lpc17xx_adc.h"
 #include "lpc17xx_timer.h"
 
-// moj
-#include "lpc17xx_rit.h"
-
-#include "light.h"
-
+// additional
 #include "stdio.h"
-
+// app
+#include "app/input.h"
 #include "app/output.h"
 
 static void init_ssp(void) {
@@ -98,10 +95,6 @@ static void init_adc(void) {
 
 }
 
-void sensor_init(void) {
-	light_enable();
-	light_setRange(LIGHT_RANGE_64000);
-}
 
 int waitTime = 250;
 void emiter_testFrequency(void) {
@@ -117,24 +110,19 @@ void emiter_testFrequency(void) {
 	printf("off: %d\n", (int) light_read());
 	Timer0_Wait(waitTime / 2);
 }
-void rit_init(void) {
-	RIT_Init(LPC_RIT);
-	RIT_TimerConfig(LPC_RIT, 2000);
-	RIT_Cmd(LPC_RIT, ENABLE);
-}
 
 int main(void) {
 	init_i2c();
 	init_ssp();
 	init_adc();
 
-	sensor_init();
-//	rit_init();
+	input_init();
 	output_init();
 
 	GPIO_SetDir(2, 0xFFFFFFFF, 1);
 
 	while (1) {
+		input_checkLoop();
 	}
 }
 
