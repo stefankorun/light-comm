@@ -11,20 +11,33 @@ void input_init(void) {
 	light_enable();
 	light_setRange(LIGHT_RANGE_64000);
 
-	light_setHiThreshold(1000);
-	light_setLoThreshold(-1);
+//	light_setHiThreshold(700);
+//	light_setLoThreshold(-1);
 }
 
 LightStatus light_status = LIGHT_OFF;
+uint32_t sensor_value = -1;
 void input_checkLoop(void) {
+	sensor_value = light_read();
+	if (sensor_value > 1000 && light_status == LIGHT_OFF) {
+		light_status = LIGHT_ON;
+		printf("LIGHT_ON\n");
+	} else if (sensor_value < 100 && light_status == LIGHT_ON) {
+		light_status = LIGHT_OFF;
+		printf("LIGHT_OFF\n");
+	}
+}
+void input_checkLoopInt(void) {
 	while(!light_getIrqStatus());
 	light_clearIrqStatus();
 	printf("LIGHT_ON: %d\n", (int) light_read());
+	return;
+
 	if (light_status == LIGHT_OFF) {
 		light_status = LIGHT_ON;
 		printf("LIGHT_ON: %d\n", (int) light_read());
 		light_setHiThreshold(-1);
-//		light_setLoThreshold(700);
+		light_setLoThreshold(300);
 	} else {
 		light_status = LIGHT_OFF;
 		printf("LIGHT_OFF: %d\n", (int) light_read());
