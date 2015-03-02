@@ -20,6 +20,6 @@ typedef struct {
 } SignalStatus;
 
 void output_init(void);
-void output_send_signal(signal_length);
+void output_sendSignal(uint8_t);
 
 #endif /* APP_OUTPUT_H_ */

@@ -121,8 +121,9 @@ int main(void) {
 
 	GPIO_SetDir(2, 0xFFFFFFFF, 1);
 
+	output_sendSignal(170);
 	while (1) {
-		input_checkLoop();
+//		input_checkLoop();
 	}
 }
 

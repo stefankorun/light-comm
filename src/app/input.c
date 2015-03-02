@@ -13,18 +13,24 @@ void input_init(void) {
 
 //	light_setHiThreshold(700);
 //	light_setLoThreshold(-1);
+
 }
 
-LightStatus light_status = LIGHT_OFF;
-uint32_t sensor_value = -1;
+LightStatus lightStatus = LIGHT_OFF;
+uint16_t sensorValue = -1;
+uint16_t sensorLength = 0;
 void input_checkLoop(void) {
-	sensor_value = light_read();
-	if (sensor_value > 1000 && light_status == LIGHT_OFF) {
-		light_status = LIGHT_ON;
+	sensorValue = light_read();
+	if (lightStatus == LIGHT_ON) {
+		sensorLength++;
+	}
+	if (sensorValue > 1000 && lightStatus == LIGHT_OFF) {
+		lightStatus = LIGHT_ON;
 		printf("LIGHT_ON\n");
-	} else if (sensor_value < 100 && light_status == LIGHT_ON) {
-		light_status = LIGHT_OFF;
-		printf("LIGHT_OFF\n");
+	} else if (sensorValue < 1000 && lightStatus == LIGHT_ON) {
+		lightStatus = LIGHT_OFF;
+		printf("LIGHT_OFF: %d\n", sensorLength);
+		sensorLength = 0;
 	}
 }
 void input_checkLoopInt(void) {
@@ -33,13 +39,13 @@ void input_checkLoopInt(void) {
 	printf("LIGHT_ON: %d\n", (int) light_read());
 	return;
 
-	if (light_status == LIGHT_OFF) {
-		light_status = LIGHT_ON;
+	if (lightStatus == LIGHT_OFF) {
+		lightStatus = LIGHT_ON;
 		printf("LIGHT_ON: %d\n", (int) light_read());
 		light_setHiThreshold(-1);
 		light_setLoThreshold(300);
 	} else {
-		light_status = LIGHT_OFF;
+		lightStatus = LIGHT_OFF;
 		printf("LIGHT_OFF: %d\n", (int) light_read());
 		light_setHiThreshold(700);
 		light_setLoThreshold(-1);
