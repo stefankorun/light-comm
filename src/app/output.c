@@ -47,6 +47,8 @@ void TIMER1_IRQHandler(void) {
 void output_init(void) {
 	timer1_init();
 	rgb_init();
+	GPIO_SetDir(2, 0xFFFFFFFF, 1);
+	GPIO_SetValue(2, 64);
 }
 
 // sending

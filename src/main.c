@@ -123,7 +123,7 @@ int main(void) {
 
 	output_sendSignal(170);
 	while (1) {
-//		input_checkLoop();
+		input_checkLoop();
 	}
 }
 
