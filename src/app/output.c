@@ -7,10 +7,53 @@
 
 #include "output.h"
 
-// Private
-uint16_t output_signalDuration = 500;
-
+// variables
 TIM_MATCHCFG_Type TIM_MatchConfigStruct;
+uint16_t output_signalDuration = 500;
+void timer1_init(void);
+void output_sendBitEnd(void);
+
+// initialize
+void output_init(void) {
+	timer1_init();
+	rgb_init();
+	GPIO_SetDir(2, 64, 1);
+	GPIO_ClearValue(2, 64);
+}
+
+// send
+uint8_t output_bufferData;
+uint8_t output_bufferPosition = -1;
+uint8_t output_bufferStatus = 0; // 0 - data; 1 - pause
+void output_sendSignal(uint8_t data) {
+	output_bufferData = data;
+	output_sendBitEnd();
+}
+void output_sendBitStart(uint8_t val) { // 0 - 0; 1 - 1; 2 - start signal
+	TIM_MatchConfigStruct.MatchValue = output_signalDuration * (val + 1);
+	TIM_ConfigMatch(LPC_TIM1, &TIM_MatchConfigStruct);
+	TIM_Cmd(LPC_TIM1, ENABLE);
+	printf("sending %d\n", val);
+	GPIO_SetValue(2, 64);
+}
+void output_sendBitEnd() {
+	GPIO_ClearValue(2, 64);
+	if (output_bufferStatus == 0) {
+		// pause handling
+		output_bufferStatus = 1;
+		TIM_MatchConfigStruct.MatchValue = output_signalDuration;
+		TIM_ConfigMatch(LPC_TIM1, &TIM_MatchConfigStruct);
+		TIM_Cmd(LPC_TIM1, ENABLE);
+	} else {
+		// next signal handling
+		output_bufferStatus = 0;
+		output_bufferPosition++;
+		output_sendBitStart((output_bufferData >> output_bufferPosition) & 1);
+	}
+}
+
+//
+// Timer setup and IRQ handling
 void timer1_init(void) {
 	TIM_TIMERCFG_Type TIM_ConfigStruct;
 	// Initialize timer 0, prescale count time of 1ms
@@ -35,55 +78,14 @@ void timer1_init(void) {
 	// TIM_Cmd(LPC_TIM1, ENABLE);
 	NVIC_EnableIRQ(TIMER1_IRQn);
 }
-// IRQ Handlers
 void TIMER1_IRQHandler(void) {
 	TIM_ClearIntPending(LPC_TIM1, 0);
 	TIM_ResetCounter(LPC_TIM1);
 	output_sendBitEnd();
 }
 
-// Public functions
-// init
-void output_init(void) {
-	timer1_init();
-	rgb_init();
-	GPIO_SetDir(2, 0xFFFFFFFF, 1);
-	GPIO_SetValue(2, 64);
-}
 
-// sending
-uint8_t output_bufferData;
-uint8_t output_bufferPosition = -1;
-uint8_t output_bufferStatus = 0; // 0 - data; 1 - pause
-void output_sendSignal(uint8_t data) {
-	output_bufferData = data;
-	output_sendBitEnd();
-}
-void output_sendBitStart(uint8_t val) {
-	if (val == 0) {
-		TIM_MatchConfigStruct.MatchValue = output_signalDuration;
-	} else {
-		TIM_MatchConfigStruct.MatchValue = output_signalDuration * 2;
-	}
-	TIM_ConfigMatch(LPC_TIM1, &TIM_MatchConfigStruct);
-	TIM_Cmd(LPC_TIM1, ENABLE);
-	printf("sending %d\n", val);
-	rgb_setLeds(5);
-}
-void output_sendBitEnd() {
-	rgb_setLeds(0);
-	if (output_bufferStatus == 0) {
-		output_bufferStatus = 1;
-		TIM_MatchConfigStruct.MatchValue = output_signalDuration;
-		TIM_ConfigMatch(LPC_TIM1, &TIM_MatchConfigStruct);
-		TIM_Cmd(LPC_TIM1, ENABLE);
-	} else {
-		output_bufferStatus = 0;
-		output_bufferPosition++;
-		output_sendBitStart((output_bufferData >> output_bufferPosition) & 1);
-	}
-}
-
+//
 // Test functions
 void output_sendSignalB(signal_length length) {
 	rgb_setLeds(5);

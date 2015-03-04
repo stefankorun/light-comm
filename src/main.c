@@ -95,22 +95,6 @@ static void init_adc(void) {
 
 }
 
-
-int waitTime = 250;
-void emiter_testFrequency(void) {
-	// on
-	GPIO_SetValue(2, 64);
-	Timer0_Wait(waitTime / 2);
-	printf("on: %d\n", (int) light_read());
-	Timer0_Wait(waitTime / 2);
-
-	// off
-	GPIO_ClearValue(2, 64);
-	Timer0_Wait(waitTime / 2);
-	printf("off: %d\n", (int) light_read());
-	Timer0_Wait(waitTime / 2);
-}
-
 int main(void) {
 	init_i2c();
 	init_ssp();
