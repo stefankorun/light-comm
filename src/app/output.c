@@ -9,7 +9,7 @@
 
 // variables
 TIM_MATCHCFG_Type TIM_MatchConfigStruct;
-uint16_t output_signalDuration = 500;
+uint16_t output_signalDuration = 200;
 void timer1_init(void);
 void output_sendBitEnd(void);
 
@@ -23,7 +23,7 @@ void output_init(void) {
 
 // send
 uint8_t output_bufferData;
-uint8_t output_bufferPosition = -1;
+int8_t output_bufferPosition = -1;
 uint8_t output_bufferStatus = 0; // 0 - data; 1 - pause
 void output_sendSignal(uint8_t data) {
 	output_bufferData = data;
@@ -47,8 +47,12 @@ void output_sendBitEnd() {
 	} else {
 		// next signal handling
 		output_bufferStatus = 0;
+		if (output_bufferPosition == -1) {
+			output_sendBitStart(6);
+		} else {
+			output_sendBitStart((output_bufferData >> output_bufferPosition) & 1);
+		}
 		output_bufferPosition++;
-		output_sendBitStart((output_bufferData >> output_bufferPosition) & 1);
 	}
 }
 

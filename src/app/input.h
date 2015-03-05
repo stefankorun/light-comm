@@ -9,6 +9,7 @@
 #define APP_INPUT_H_
 
 #include "lpc17xx_i2c.h"
+#include "lpc17xx_timer.h"
 #include "light.h"
 
 typedef enum {
