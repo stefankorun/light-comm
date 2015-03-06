@@ -16,6 +16,7 @@
 // additional
 #include "stdio.h"
 // app
+#include "app/error_detect.h"
 #include "app/input.h"
 #include "app/output.h"
 

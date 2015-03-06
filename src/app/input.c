@@ -7,7 +7,8 @@
 
 #include "input.h"
 
-void input_processSignal(sensorLength);
+void input_processSignal(uint16_t);
+void input_appendChar(uint16_t);
 
 void input_init(void) {
 	light_enable();
@@ -40,29 +41,43 @@ void input_checkLoop(void) {
 
 int8_t packetPosition = -1;
 uint16_t packedData = 0;
-void input_processSignal(sensorLength) {
+void input_processSignal(uint16_t sensorLength) {
+	printf("sensorLength: %d\t", sensorLength);
 	if (sensorLength > 600 || packetPosition >= 8) {
 		if (packetPosition == -1) {
 			printf("Packet started\n");
 			packetPosition++;
 		} else {
 			printf("Packet end: %c\n", (char) packedData);
+			input_appendChar(packedData);
 			packetPosition = -1;
 			packedData = 0;
 		}
-	} else if (sensorLength > 300) {
-		printf("Signal registered: %d\n", 1);
-		packedData |= 1 << packetPosition++;
-	} else {
-		printf("Signal registered: %d\n", 0);
-		packedData &= ~(1 << packetPosition++);
+	} else if (packetPosition > -1) {
+		if (sensorLength > 300) {
+			printf("Signal registered: %d\n", 1);
+			packedData |= 1 << packetPosition++;
+		} else {
+			printf("Signal registered: %d\n", 0);
+			packedData &= ~(1 << packetPosition++);
+		}
 	}
-//	printf("Signal registered: %d\n", sensorLength);
+}
+int8_t wordPosition = 0;
+char wordData[100];
+void input_appendChar(uint16_t data) {
+	wordData[wordPosition++] = (char) data;
+	if (data == 0) {
+		printf("Word: %s\n", wordData);
+	}
 }
 
 
+
+// test functions
 void input_checkLoopInt(void) {
-	while(!light_getIrqStatus());
+	while (!light_getIrqStatus())
+		;
 	light_clearIrqStatus();
 	printf("LIGHT_ON: %d\n", (int) light_read());
 	return;
