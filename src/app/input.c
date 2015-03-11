@@ -8,12 +8,19 @@
 #include "input.h"
 
 void input_processSignal(uint16_t);
-void input_appendChar(uint16_t);
+void input_appendFrame(uint16_t);
+
+uint8_t baseSensorLength = 150;
+uint8_t baseSensorTreshold = 1000;
 
 void input_init(void) {
+	oled_init();
+	oled_clearScreen(OLED_COLOR_BLACK);
+
 	light_enable();
 	light_setRange(LIGHT_RANGE_64000);
 	light_setWidth(LIGHT_WIDTH_08BITS);
+
 	Timer0_Wait(100);
 
 //	light_setHiThreshold(700);
@@ -25,55 +32,62 @@ uint16_t sensorValue = -1;
 uint16_t sensorLength = 0;
 void input_checkLoop(void) {
 	sensorValue = light_read();
-//	printf("sensorValue %d", sensorValue);
+	// printf("sensorValue %d", sensorValue);
 	if (lightStatus == LIGHT_ON) {
 		sensorLength++;
 	}
-	if (sensorValue > 1000 && lightStatus == LIGHT_OFF) {
+	if (sensorValue > baseSensorTreshold && lightStatus == LIGHT_OFF) {
 		lightStatus = LIGHT_ON;
-//		printf("LIGHT_ON\n");
-	} else if (sensorValue < 1000 && lightStatus == LIGHT_ON) {
+		// printf("LIGHT_ON\n");
+	} else if (sensorValue < baseSensorTreshold && lightStatus == LIGHT_ON) {
 		lightStatus = LIGHT_OFF;
 		input_processSignal(sensorLength);
 		sensorLength = 0;
 	}
 }
 
-int8_t packetPosition = -1;
-uint16_t packedData = 0;
+int8_t framePosition = -1;
+uint16_t frameData = 0;
 void input_processSignal(uint16_t sensorLength) {
 	printf("sensorLength: %d\t", sensorLength);
-	if (sensorLength > 600 || packetPosition >= 8) {
-		if (packetPosition == -1) {
+	if (sensorLength > baseSensorLength * 4 || framePosition >= 8) {
+		if (framePosition == -1) {
 			printf("Packet started\n");
-			packetPosition++;
+			framePosition++;
 		} else {
-			printf("Packet end: %c\n", (char) packedData);
-			input_appendChar(packedData);
-			packetPosition = -1;
-			packedData = 0;
+			printf("Packet end: %c\n", (char) frameData);
+			input_appendFrame(frameData);
+			framePosition = -1;
+			frameData = 0;
 		}
-	} else if (packetPosition > -1) {
-		if (sensorLength > 300) {
+	} else if (framePosition > -1) {
+		if (sensorLength > baseSensorLength * 2) {
 			printf("Signal registered: %d\n", 1);
-			packedData |= 1 << packetPosition++;
+			frameData |= 1 << framePosition++;
 		} else {
 			printf("Signal registered: %d\n", 0);
-			packedData &= ~(1 << packetPosition++);
+			frameData &= ~(1 << framePosition++);
 		}
 	}
 }
-int8_t wordPosition = 0;
-char wordData[100];
-void input_appendChar(uint16_t data) {
-	wordData[wordPosition++] = (char) data;
-	if (data == 0) {
-		printf("Word: %s\n", wordData);
+
+int8_t packetPosition = 0;
+char packetData[100];
+void input_appendFrame(uint16_t frame) {
+	if (edet_checkParity(frame)) {
+		printf("Frame [%d] parity check failed!\n", frame);
+	}
+	frame &= ~(1 << 8); // clear parity bit
+
+	packetData[packetPosition++] = (char) frame;
+	if (frame == 0) {
+		printf("Word: %s\n", packetData);
+		oled_putString(1, 1, packetData, OLED_COLOR_BLACK, OLED_COLOR_WHITE);
+		packetPosition = 0;
 	}
 }
 
-
-
+//
 // test functions
 void input_checkLoopInt(void) {
 	while (!light_getIrqStatus())

@@ -18,4 +18,6 @@ uint8_t crcTable[256];
 typedef uint8_t crc;
 crc crcTable[256];
 
+uint8_t edet_checkParity(uint16_t);
+
 #endif /* APP_ERROR_DETECT_H_ */
