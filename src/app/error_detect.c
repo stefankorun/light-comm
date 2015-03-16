@@ -67,5 +67,5 @@ uint8_t edet_checkParity(uint16_t frame) {
 	for (i = 0; i <= 8; i++) {
 		parity = (parity + ((frame >> i) & 1)) % 2;
 	}
-	return parity == 0;
+	return parity;
 }

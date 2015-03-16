@@ -11,15 +11,17 @@ void input_processSignal(uint16_t);
 void input_appendFrame(uint16_t);
 
 uint8_t baseSensorLength = 150;
-uint8_t baseSensorTreshold = 1000;
+uint16_t baseSensorTreshold = 1000;
 
 void input_init(void) {
 	oled_init();
-	oled_clearScreen(OLED_COLOR_BLACK);
+	oled_clearScreen(OLED_COLOR_WHITE);
 
 	light_enable();
 	light_setRange(LIGHT_RANGE_64000);
 	light_setWidth(LIGHT_WIDTH_08BITS);
+
+	edet_crcInit();
 
 	Timer0_Wait(100);
 
@@ -32,7 +34,7 @@ uint16_t sensorValue = -1;
 uint16_t sensorLength = 0;
 void input_checkLoop(void) {
 	sensorValue = light_read();
-	// printf("sensorValue %d", sensorValue);
+//	printf("sensorValue %d\n", sensorValue);
 	if (lightStatus == LIGHT_ON) {
 		sensorLength++;
 	}
@@ -50,7 +52,7 @@ int8_t framePosition = -1;
 uint16_t frameData = 0;
 void input_processSignal(uint16_t sensorLength) {
 	printf("sensorLength: %d\t", sensorLength);
-	if (sensorLength > baseSensorLength * 4 || framePosition >= 8) {
+	if (sensorLength > baseSensorLength * 4 || framePosition >= 9) {
 		if (framePosition == -1) {
 			printf("Packet started\n");
 			framePosition++;
@@ -75,12 +77,23 @@ int8_t packetPosition = 0;
 char packetData[100];
 void input_appendFrame(uint16_t frame) {
 	if (edet_checkParity(frame)) {
-		printf("Frame [%d] parity check failed!\n", frame);
+		printf("Frame parity check failed!\n");
+	} else {
+		printf("Frame parity check passed!\n");
 	}
 	frame &= ~(1 << 8); // clear parity bit
 
 	packetData[packetPosition++] = (char) frame;
+
+	// handle frame end
 	if (frame == 0) {
+		uint8_t crc = edet_crcFast((uint8_t*) packetData, strlen(packetData) - 1);
+		if (crc == packetData[packetPosition - 2]) {
+			printf("CRC Passed\t");
+		} else {
+			printf("CRC Failed\t");
+		}
+		packetData[packetPosition - 2] = '\0';
 		printf("Word: %s\n", packetData);
 		oled_putString(1, 1, packetData, OLED_COLOR_BLACK, OLED_COLOR_WHITE);
 		packetPosition = 0;
@@ -90,8 +103,7 @@ void input_appendFrame(uint16_t frame) {
 //
 // test functions
 void input_checkLoopInt(void) {
-	while (!light_getIrqStatus())
-		;
+	while (!light_getIrqStatus());
 	light_clearIrqStatus();
 	printf("LIGHT_ON: %d\n", (int) light_read());
 	return;
